@@ -33,6 +33,75 @@ namespace BaseStationReader.Tests.Configuration
         }
 
         [TestMethod]
+        [DoNotParallelize]
+        public void EnvironmentVariablesOverrideAppSettingsTest()
+        {
+            const string portVariable = "ApplicationSettings__Port";
+            const string logVariable = "ApplicationSettings__LogFile";
+            const string intervalVariable = "ApplicationSettings__SendInterval";
+            const string aircraftVariable = "ApplicationSettings__NumberOfAircraft";
+            const string latitudeVariable = "ApplicationSettings__ReceiverLatitude";
+            const string longitudeVariable = "ApplicationSettings__ReceiverLongitude";
+            var originalPort = Environment.GetEnvironmentVariable(portVariable);
+            var originalLogFile = Environment.GetEnvironmentVariable(logVariable);
+            var originalInterval = Environment.GetEnvironmentVariable(intervalVariable);
+            var originalAircraft = Environment.GetEnvironmentVariable(aircraftVariable);
+            var originalLatitude = Environment.GetEnvironmentVariable(latitudeVariable);
+            var originalLongitude = Environment.GetEnvironmentVariable(longitudeVariable);
+
+            try
+            {
+                Environment.SetEnvironmentVariable(portVariable, "30004");
+                Environment.SetEnvironmentVariable(logVariable, "/var/opt/adsb-simulator/ReceiverSimulator.log");
+                Environment.SetEnvironmentVariable(intervalVariable, "250");
+                Environment.SetEnvironmentVariable(aircraftVariable, "4");
+                Environment.SetEnvironmentVariable(latitudeVariable, "40.6413");
+                Environment.SetEnvironmentVariable(longitudeVariable, "-73.7781");
+                _parser.Parse([]);
+
+                var settings = _builder.BuildSettings(_parser, "simulatorsettings.json");
+
+                Assert.AreEqual(30004, settings?.Port);
+                Assert.AreEqual("/var/opt/adsb-simulator/ReceiverSimulator.log", settings?.LogFile);
+                Assert.AreEqual(250, settings?.SendInterval);
+                Assert.AreEqual(4, settings?.NumberOfAircraft);
+                Assert.AreEqual(40.6413, settings?.ReceiverLatitude);
+                Assert.AreEqual(-73.7781, settings?.ReceiverLongitude);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(portVariable, originalPort);
+                Environment.SetEnvironmentVariable(logVariable, originalLogFile);
+                Environment.SetEnvironmentVariable(intervalVariable, originalInterval);
+                Environment.SetEnvironmentVariable(aircraftVariable, originalAircraft);
+                Environment.SetEnvironmentVariable(latitudeVariable, originalLatitude);
+                Environment.SetEnvironmentVariable(longitudeVariable, originalLongitude);
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void CommandLinePortOverridesEnvironmentTest()
+        {
+            const string portVariable = "ApplicationSettings__Port";
+            var originalPort = Environment.GetEnvironmentVariable(portVariable);
+
+            try
+            {
+                Environment.SetEnvironmentVariable(portVariable, "30004");
+                _parser.Parse(["--port", "12345"]);
+
+                var settings = _builder.BuildSettings(_parser, "simulatorsettings.json");
+
+                Assert.AreEqual(12345, settings?.Port);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(portVariable, originalPort);
+            }
+        }
+
+        [TestMethod]
         public void OverridePortTest()
         {
             var args = new string[] { "--port", "12345" };

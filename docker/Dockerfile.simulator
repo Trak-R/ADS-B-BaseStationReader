@@ -15,6 +15,9 @@ RUN dotnet publish BaseStationReader.Simulator/BaseStationReader.Simulator.cspro
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /opt/adsb-simulator
 COPY --from=build /app/publish .
+# Loopback cannot accept clients that reach the process through a pod address.
+ENV SIMULATOR_BIND_ADDRESS=0.0.0.0
+EXPOSE 30003
 # The aspnet runtime image defines APP_UID as 1654.
 USER $APP_UID
 ENTRYPOINT ["./BaseStationReader.Simulator"]
