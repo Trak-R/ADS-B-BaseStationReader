@@ -1,0 +1,20 @@
+# Build from the repository root:
+#   docker build -f docker/Dockerfile.simulator -t ghcr.io/trak-r/adsb-simulator:2.39.0 .
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+COPY src/BaseStationReader.Entities/ BaseStationReader.Entities/
+COPY src/BaseStationReader.Interfaces/ BaseStationReader.Interfaces/
+COPY src/BaseStationReader.Data/ BaseStationReader.Data/
+COPY src/BaseStationReader.BusinessLogic/ BaseStationReader.BusinessLogic/
+COPY src/BaseStationReader.Simulator/ BaseStationReader.Simulator/
+RUN dotnet publish BaseStationReader.Simulator/BaseStationReader.Simulator.csproj \
+    -c Release \
+    -o /app/publish \
+    --nologo
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /opt/adsb-simulator
+COPY --from=build /app/publish .
+# The aspnet runtime image defines APP_UID as 1654.
+USER $APP_UID
+ENTRYPOINT ["./BaseStationReader.Simulator"]

@@ -36,6 +36,7 @@ namespace BaseStationReader.BusinessLogic.Simulator
             IAircraftGenerator aircraftGenerator,
             IMessageGeneratorWrapper generatorWrapper,
             int maximumAltitude,
+            IPAddress bindAddress,
             int port,
             int numberOfAircraft,
             int sendInterval,
@@ -51,7 +52,7 @@ namespace BaseStationReader.BusinessLogic.Simulator
             // Hook up the method called on each "tick"
             _timer.Elapsed += OnTimer;
 
-            _listener = new TcpListener(IPAddress.Loopback, port);
+            _listener = new TcpListener(bindAddress, port);
             _logger = logger;
             _aircraftGenerator = aircraftGenerator;
             _messageGeneratorWrapper = generatorWrapper;
