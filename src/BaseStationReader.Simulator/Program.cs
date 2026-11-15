@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Reflection;
 using BaseStationReader.Interfaces.Logging;
 using BaseStationReader.Interfaces.Simulator;
+using System.Net;
 
 namespace BaseStationReader.Simulator
 {
@@ -76,12 +77,22 @@ namespace BaseStationReader.Simulator
                 };
                 IMessageGeneratorWrapper messageGeneratorWrapper = new MessageGeneratorWrapper(generators);
 
+                // Loopback keeps a local run off the LAN. SIMULATOR_BIND_ADDRESS=0.0.0.0
+                // accepts clients that reach the process through a pod address.
+                var bindAddress = IPAddress.Loopback;
+                var bindOverride = Environment.GetEnvironmentVariable("SIMULATOR_BIND_ADDRESS");
+                if (!string.IsNullOrWhiteSpace(bindOverride))
+                {
+                    bindAddress = IPAddress.Parse(bindOverride);
+                }
+
                 // Configure a timer, aircraft and message generatorand the simulator
                 using (var simulator = new ReceiverSimulator(
                     logger,
                     aircraftGenerator,
                     messageGeneratorWrapper,
                     settings.MaximumAltitude,
+                    bindAddress,
                     settings.Port,
                     settings.NumberOfAircraft,
                     settings.SendInterval,
@@ -90,15 +101,22 @@ namespace BaseStationReader.Simulator
                     // Run the simulator
                     Task.Run(() => simulator.StartAsync());
 
-                    // Continue until the user hits ESC to stop the simulator
-                    do
+                    // A container has no console. Stay up until the process is stopped.
+                    if (Console.IsInputRedirected)
                     {
-                        while (!Console.KeyAvailable)
-                        {
-                            Thread.Sleep(100);
-                        }
+                        Thread.Sleep(Timeout.Infinite);
                     }
-                    while (Console.ReadKey().Key != ConsoleKey.Escape);
+                    else
+                    {
+                        do
+                        {
+                            while (!Console.KeyAvailable)
+                            {
+                                Thread.Sleep(100);
+                            }
+                        }
+                        while (Console.ReadKey().Key != ConsoleKey.Escape);
+                    }
                 }
             }
         }
