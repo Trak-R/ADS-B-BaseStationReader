@@ -1,4 +1,5 @@
-﻿using BaseStationReader.Entities.Config;
+﻿using System.Globalization;
+using BaseStationReader.Entities.Config;
 using BaseStationReader.Entities.Logging;
 using BaseStationReader.Interfaces.Config;
 
@@ -16,6 +17,44 @@ namespace BaseStationReader.BusinessLogic.Configuration
         {
             // Read the config file to provide default settings
             var settings = base.Read(configPath);
+
+            // Environment variables provide container-friendly overrides while command-line values
+            // below retain the highest precedence.
+            var environmentPort = Environment.GetEnvironmentVariable("ApplicationSettings__Port");
+            if (int.TryParse(environmentPort, out var port))
+            {
+                settings.Port = port;
+            }
+
+            var environmentLogFile = Environment.GetEnvironmentVariable("ApplicationSettings__LogFile");
+            if (!string.IsNullOrWhiteSpace(environmentLogFile))
+            {
+                settings.LogFile = environmentLogFile;
+            }
+
+            var environmentSendInterval = Environment.GetEnvironmentVariable("ApplicationSettings__SendInterval");
+            if (int.TryParse(environmentSendInterval, out var sendInterval))
+            {
+                settings.SendInterval = sendInterval;
+            }
+
+            var environmentNumberOfAircraft = Environment.GetEnvironmentVariable("ApplicationSettings__NumberOfAircraft");
+            if (int.TryParse(environmentNumberOfAircraft, out var numberOfAircraft))
+            {
+                settings.NumberOfAircraft = numberOfAircraft;
+            }
+
+            var environmentLatitude = Environment.GetEnvironmentVariable("ApplicationSettings__ReceiverLatitude");
+            if (double.TryParse(environmentLatitude, NumberStyles.Float, CultureInfo.InvariantCulture, out var receiverLatitude))
+            {
+                settings.ReceiverLatitude = receiverLatitude;
+            }
+
+            var environmentLongitude = Environment.GetEnvironmentVariable("ApplicationSettings__ReceiverLongitude");
+            if (double.TryParse(environmentLongitude, NumberStyles.Float, CultureInfo.InvariantCulture, out var receiverLongitude))
+            {
+                settings.ReceiverLongitude = receiverLongitude;
+            }
 
             // Apply the command line values over the defaults
             var values = parser.GetValues(CommandLineOptionType.Port);
